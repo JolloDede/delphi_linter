@@ -77,27 +77,11 @@ impl Lexer {
     fn process_stringliteral(&mut self) -> Token {
         self.it.next().unwrap();
         let mut content = String::new();
-        let mut q_count = 0;
+        let mut enumer = self.it.clone().enumerate();
 
-        if *self.it.peek().unwrap() == '\'' {
-            while let Some(c) = self.it.next() {
-                if c == '\'' {
-                    q_count += 1;
-                } else {
-                    break;
-                }
-            }
-        }
-
-        while let Some(c) = self.it.next() {
+        while let Some((i, c)) = enumer.next() {
             if c == '\'' {
-                if q_count == 0 {
-                    break;
-                } else {
-                    q_count -= 1;
-                }
-            } else {
-                content.push(c);
+                
             }
         }
 

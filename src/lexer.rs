@@ -79,11 +79,16 @@ impl Lexer {
         let mut content = String::new();
         let mut enumer = self.it.clone().enumerate();
 
-        while let Some((i, c)) = enumer.next() {
-            if c == '\'' {
-                
-            }
-        }
+        // while let Some((i, c)) = enumer.next() {
+        //     if c == '\'' {
+
+        //     }
+        // }
+
+        // for to check if its a multiline string
+
+        // for content of the string
+        // // for check if its the end of the string
 
         return Token {
             typ: TokenTyp::String,

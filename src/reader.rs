@@ -45,7 +45,7 @@ impl Reader {
         self.chars.get(self.i + index)
     }
 
-    fn advance_by(&mut self, index: usize) {
+    pub fn advance_by(&mut self, index: usize) {
         for _ in 0..index {
             self.next();
         }

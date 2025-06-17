@@ -1,4 +1,6 @@
-use std::{iter::Peekable, path::Iter, str::Chars, vec::IntoIter};
+use std::{iter::Peekable, path::Iter, str::Chars, thread::panicking, vec::IntoIter};
+
+use crate::reader::Reader;
 
 #[derive(Debug, PartialEq)]
 enum TokenTyp {
@@ -21,7 +23,7 @@ struct Token {
 }
 
 struct Lexer {
-    it: Peekable<IntoIter<char>>,
+    reader: Reader,
 }
 
 impl Iterator for Lexer {
@@ -34,14 +36,13 @@ impl Iterator for Lexer {
 
 impl Lexer {
     fn new(content: String) -> Self {
-        let charas: Vec<char> = content.chars().collect();
         Lexer {
-            it: charas.into_iter().peekable(),
+            reader: Reader::new(content),
         }
     }
 
     fn next_token(&mut self) -> Token {
-        let char = self.it.peek();
+        let char = self.reader.peek();
 
         match char {
             Some(c) if c.is_whitespace() => self.process_whitespace(),
@@ -59,7 +60,7 @@ impl Lexer {
     fn process_whitespace(&mut self) -> Token {
         let mut content = String::new();
 
-        while let Some(c) = self.it.next() {
+        while let Some(c) = self.reader.next() {
             if !c.is_whitespace() {
                 break;
             }
@@ -75,20 +76,36 @@ impl Lexer {
     }
 
     fn process_stringliteral(&mut self) -> Token {
-        self.it.next().unwrap();
+        self.reader.next().unwrap();
         let mut content = String::new();
-        let mut enumer = self.it.clone().enumerate();
-
-        // while let Some((i, c)) = enumer.next() {
-        //     if c == '\'' {
-
-        //     }
-        // }
+        let mut q_count = 0;
+        let mut is_multitline = false;
+        // let mut advanced = 0;
 
         // for to check if its a multiline string
+        let mut i = 0;
+        loop {
+            if let Some(c) = self.reader.peek_nth(i) {
+                if *c == '\'' {
+                    q_count += 1;
+                } else if *c == '\n' {
+                    is_multitline = true;
+                } else {
+                    break;
+                }
+            } else {
+                panic!("process_stringliteral: What")
+            }
+
+            i += 1;
+        }
+
+        self.reader.advance_by(q_count);
 
         // for content of the string
         // // for check if its the end of the string
+
+        // self.it.advance_by(advanced);
 
         return Token {
             typ: TokenTyp::String,

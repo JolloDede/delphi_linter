@@ -1,22 +1,14 @@
-struct ReaderIter {
+pub struct Reader {
     chars: Vec<char>,
     i: usize,
     row: usize,
     col: usize,
 }
 
-impl ReaderIter {
-    fn new(content: String) -> Self {
-        let charas: Vec<char> = content.chars().collect();
-        ReaderIter {
-            chars: charas,
-            i: 0,
-            row: 0,
-            col: 0,
-        }
-    }
+impl Iterator for Reader {
+    type Item = char;
 
-    fn next(&mut self) -> Option<&char> {
+    fn next(&mut self) -> Option<Self::Item> {
         if self.i != 0 {
             self.i += 1;
         }
@@ -27,17 +19,29 @@ impl ReaderIter {
                 self.row += 1;
                 self.col = 0;
             }
-            return Some(c);
+            return Some(*c);
         }
 
         return None;
     }
+}
 
-    fn peek(&mut self) -> Option<&char> {
+impl Reader {
+    pub fn new(content: String) -> Self {
+        let charas: Vec<char> = content.chars().collect();
+        Reader {
+            chars: charas,
+            i: 0,
+            row: 0,
+            col: 0,
+        }
+    }
+
+   pub fn peek(&mut self) -> Option<&char> {
         self.peek_nth(0)
     }
 
-    fn peek_nth(&self, index: usize) -> Option<&char> {
+    pub fn peek_nth(&self, index: usize) -> Option<&char> {
         self.chars.get(self.i + index)
     }
 
@@ -54,7 +58,7 @@ mod tests {
 
     #[test]
     fn empty() {
-        let mut reader = ReaderIter::new(String::from(""));
+        let mut reader = Reader::new(String::from(""));
 
         assert_eq!(reader.i, 0);
         let c = reader.next();
@@ -64,7 +68,7 @@ mod tests {
 
     #[test]
     fn col() {
-        let mut reader = ReaderIter::new(String::from("1"));
+        let mut reader = Reader::new(String::from("1"));
 
         let _ = reader.next();
 
@@ -74,7 +78,7 @@ mod tests {
 
     #[test]
     fn row() {
-        let mut reader = ReaderIter::new(String::from("\n"));
+        let mut reader = Reader::new(String::from("\n"));
 
         let _ = reader.next();
 

@@ -75,37 +75,60 @@ impl Lexer {
         };
     }
 
-    fn process_stringliteral(&mut self) -> Token {
-        self.reader.next().unwrap();
-        let mut content = String::new();
+    fn string_count_quote(&self) -> usize {
         let mut q_count = 0;
-        let mut is_multitline = false;
-        // let mut advanced = 0;
 
-        // for to check if its a multiline string
         let mut i = 0;
         loop {
             if let Some(c) = self.reader.peek_nth(i) {
                 if *c == '\'' {
                     q_count += 1;
-                } else if *c == '\n' {
-                    is_multitline = true;
                 } else {
                     break;
                 }
             } else {
-                panic!("process_stringliteral: What")
+                break;
             }
 
             i += 1;
         }
 
-        self.reader.advance_by(q_count);
+        return q_count;
+    }
 
-        // for content of the string
-        // // for check if its the end of the string
+    fn process_stringliteral(&mut self) -> Token {
+        self.reader.next().unwrap();
+        let mut content = String::new();
+        let mut is_multitline = false;
 
-        // self.it.advance_by(advanced);
+        let q_count = self.string_count_quote();
+
+        if q_count > 1 {
+            self.reader.advance_by(q_count);
+
+            if let Some(c) = self.reader.peek() {
+                if *c == '\n' {
+                    is_multitline = true;
+                } else {
+                    let _ = [0..q_count / 2].map(|_| content.push('\''));
+                }
+            }
+        }
+
+        while let Some(c) = self.reader.next() {
+            if c == '\'' {
+                let current_q_count = self.string_count_quote();
+
+                if is_multitline && current_q_count == q_count {
+                    self.reader.advance_by(current_q_count);
+                    break;
+                } else if is_multitline {
+                    let _ = [0..current_q_count / 2].map(|_| content.push('\''));
+                }
+            } else {
+                content.push(c);
+            }
+        }
 
         return Token {
             typ: TokenTyp::String,
@@ -135,8 +158,6 @@ mod tests {
 
         let tok = lex.next_token();
 
-        println!("{}", tok.content);
-
         assert_eq!(tok.typ, TokenTyp::Whitespace);
         assert_eq!(tok.content, " \t\n");
     }
@@ -147,8 +168,6 @@ mod tests {
 
         let tok = lex.next_token();
 
-        println!("{}", tok.content);
-
         assert_eq!(tok.typ, TokenTyp::String);
         assert_eq!(tok.content, "string");
     }
@@ -158,8 +177,6 @@ mod tests {
         let mut lex = Lexer::new(String::from("'''\ncool\n'''"));
 
         let tok = lex.next_token();
-
-        println!("{}", tok.content);
 
         assert_eq!(tok.typ, TokenTyp::String);
         assert_eq!(tok.content, "cool\n");

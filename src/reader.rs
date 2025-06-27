@@ -3,13 +3,16 @@ pub struct Reader {
     i: usize,
     row: usize,
     col: usize,
+    first: bool,
 }
 
 impl Iterator for Reader {
     type Item = char;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.i != 0 {
+        if self.first {
+            self.first = false;
+        } else {
             self.i += 1;
         }
         self.col += 1;
@@ -34,10 +37,11 @@ impl Reader {
             i: 0,
             row: 0,
             col: 0,
+            first: true,
         }
     }
 
-   pub fn peek(&mut self) -> Option<&char> {
+    pub fn peek(&mut self) -> Option<&char> {
         self.peek_nth(0)
     }
 
@@ -64,6 +68,21 @@ mod tests {
         let c = reader.next();
 
         assert_eq!(c, None);
+    }
+
+    #[test]
+    fn i() {
+        let mut reader = Reader::new(String::from("12"));
+
+        let _ = reader.next();
+
+        assert_eq!(reader.i, 0);
+        assert_eq!(reader.col, 1);
+
+        let _ = reader.next();
+
+        assert_eq!(reader.i, 1);
+        assert_eq!(reader.col, 2);
     }
 
     #[test]

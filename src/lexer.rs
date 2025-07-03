@@ -47,6 +47,7 @@ impl Lexer {
         match char {
             Some(c) if c.is_whitespace() => self.process_whitespace(),
             Some(c) if *c == '\'' => self.process_stringliteral(),
+            Some(c) if c.is_numeric() => self.process_numeric(),
             Some(_) => todo!(),
             None => Token {
                 typ: TokenTyp::EOF,
@@ -130,8 +131,31 @@ impl Lexer {
             }
         }
 
+        if is_multitline {
+            content.truncate(content.len() - 1);
+        }
+
         return Token {
             typ: TokenTyp::String,
+            content: content,
+            row: 0,
+            col: 0,
+        };
+    }
+
+    fn process_numeric(&mut self) -> Token {
+        let mut content = String::new();
+
+        while let Some(c) = self.reader.next() {
+            if c.is_numeric() || c == '.' {
+                content.push(c);
+            }else {
+                break;
+            }
+        }
+
+        return Token {
+            typ: TokenTyp::Number,
             content: content,
             row: 0,
             col: 0,
@@ -179,7 +203,7 @@ mod tests {
         let tok = lex.next_token();
 
         assert_eq!(tok.typ, TokenTyp::String);
-        assert_eq!(tok.content, "cool\n");
+        assert_eq!(tok.content, "cool");
     }
 
     #[test]
@@ -205,5 +229,22 @@ mod tests {
         // assert!(tok.typ == TokenTyp::Whitespace);
         // assert!(tok.content == " \t\n");
         todo!("bla")
+    }
+
+    #[test]
+    fn numeric_tokens() {
+        let mut lex = Lexer::new(String::from("12"));
+
+        let tok = lex.next_token();
+
+        assert_eq!(tok.typ, TokenTyp::Number);
+        assert_eq!(tok.content, "12");
+
+        let mut lex = Lexer::new(String::from("1.2"));
+
+        let tok = lex.next_token();
+
+        assert_eq!(tok.typ, TokenTyp::Number);
+        assert_eq!(tok.content, "1.2");
     }
 }

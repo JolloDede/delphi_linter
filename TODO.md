@@ -7,6 +7,6 @@
     - [X] multiline
     - [ ] char
   - [X] Number
-  - [ ] Operator
+  - [X] Operator
   - [ ] Indentifier
   - [ ] Whitespace

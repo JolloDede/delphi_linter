@@ -48,6 +48,7 @@ impl Lexer {
             Some(c) if c.is_whitespace() => self.process_whitespace(),
             Some(c) if *c == '\'' => self.process_stringliteral(),
             Some(c) if c.is_numeric() => self.process_numeric(),
+            Some(c) if c.is_ascii_punctuation() => Token { typ: TokenTyp::Operator, content: self.reader.next().unwrap().to_string(), row: 0, col: 0 },
             Some(_) => todo!(),
             None => Token {
                 typ: TokenTyp::EOF,
@@ -246,5 +247,29 @@ mod tests {
 
         assert_eq!(tok.typ, TokenTyp::Number);
         assert_eq!(tok.content, "1.2");
+    }
+
+    #[test]
+    fn operator_tokens() {
+        let mut lex = Lexer::new(String::from("*"));
+
+        let tok = lex.next_token();
+
+        assert_eq!(tok.typ, TokenTyp::Operator);
+        assert_eq!(tok.content, "*");
+
+        let mut lex = Lexer::new(String::from(":"));
+
+        let tok = lex.next_token();
+
+        assert_eq!(tok.typ, TokenTyp::Operator);
+        assert_eq!(tok.content, ":");
+
+        let mut lex = Lexer::new(String::from("="));
+
+        let tok = lex.next_token();
+
+        assert_eq!(tok.typ, TokenTyp::Operator);
+        assert_eq!(tok.content, "=");
     }
 }

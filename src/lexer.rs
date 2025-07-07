@@ -43,13 +43,16 @@ impl Lexer {
     }
 
     fn next_token(&mut self) -> Token {
-        let char = self.reader.peek();
+        let char = self.reader.peek().copied();
 
         match char {
             Some(c) if c.is_whitespace() => self.process_whitespace(),
-            Some(c) if *c == '\'' => self.process_stringliteral(),
+            Some(c) if c == '\'' => self.process_stringliteral(),
             Some(c) if c.is_numeric() => self.process_numeric(),
-            Some(c) if c.is_ascii_punctuation() => Token {
+            Some(c) if c == '{' || (c == '/' && *self.reader.peek_nth(1).unwrap() == '/') => {
+                self.process_comment()
+            }
+            Some(c) if ['+', '-', '*', '/'].contains(&c) => Token {
                 typ: TokenTyp::Operator,
                 content: self.reader.next().unwrap().to_string(),
                 row: 0,
@@ -311,6 +314,42 @@ impl Lexer {
             col: 0,
         };
     }
+
+    fn process_comment(&mut self) -> Token {
+        let mut content = String::new();
+        let start_char = self.reader.peek().unwrap();
+
+        match start_char {
+            '/' => {
+                self.reader.advance_by(2);
+                while let Some(c) = self.reader.next() {
+                    if c != '\n' {
+                        content.push(c);
+                    } else {
+                        break;
+                    }
+                }
+            },
+            '{' => {
+                self.reader.advance_by(1);
+                while let Some(c) = self.reader.next() {
+                    if c != '}' {
+                        content.push(c);
+                    } else {
+                        break;
+                    }
+                }
+            },
+            _ => panic!("WTF how did we get here"),
+        }
+
+        return Token {
+            typ: TokenTyp::Comment,
+            content: content,
+            row: 0,
+            col: 0,
+        };
+    }
 }
 
 #[cfg(test)]
@@ -440,5 +479,22 @@ mod tests {
 
         assert_eq!(tok.typ, TokenTyp::Keyword);
         assert_eq!(tok.content, "const");
+    }
+
+    #[test]
+    fn comment_tokens() {
+        let mut lex = Lexer::new(String::from("// nice comment\n"));
+
+        let tok = lex.next_token();
+
+        assert_eq!(tok.typ, TokenTyp::Comment);
+        assert_eq!(tok.content, " nice comment");
+
+        let mut lex = Lexer::new(String::from("{another one}"));
+
+        let tok = lex.next_token();
+
+        assert_eq!(tok.typ, TokenTyp::Comment);
+        assert_eq!(tok.content, "another one");
     }
 }

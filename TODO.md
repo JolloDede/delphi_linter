@@ -10,4 +10,4 @@
   - [X] Operator
   - [X] Indentifier / Keywords
   - [X] Whitespace
-  - [ ] comment
+  - [X] comment

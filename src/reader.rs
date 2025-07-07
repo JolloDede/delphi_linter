@@ -104,4 +104,21 @@ mod tests {
         assert_eq!(reader.col, 0);
         assert_eq!(reader.row, 1);
     }
+
+    #[test]
+    fn advance_by() {
+        let mut reader = Reader::new(String::from("1234"));
+
+        let _ = reader.advance_by(1);
+
+        assert_eq!(reader.i, 0);
+
+        let _ = reader.advance_by(1);
+
+        assert_eq!(reader.i, 1);
+
+         let _ = reader.advance_by(2);
+
+        assert_eq!(reader.i, 3);
+    }
 }

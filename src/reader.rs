@@ -1,8 +1,8 @@
 pub struct Reader {
     chars: Vec<char>,
     i: usize,
-    row: usize,
-    col: usize,
+    pub row: usize,
+    pub col: usize,
     first: bool,
 }
 

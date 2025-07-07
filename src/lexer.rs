@@ -1,10 +1,9 @@
 use core::panic;
-use std::{iter::Peekable, path::Iter, str::Chars, thread::panicking, vec::IntoIter};
 
 use crate::reader::Reader;
 
 #[derive(Debug, PartialEq)]
-enum TokenTyp {
+pub enum TokenTyp {
     Comment,
     String,
     Number,
@@ -16,14 +15,14 @@ enum TokenTyp {
     EOF,
 }
 
-struct Token {
+pub struct Token {
     typ: TokenTyp,
     content: String,
-    row: i64,
-    col: i64,
+    row: usize,
+    col: usize,
 }
 
-struct Lexer {
+pub struct Lexer {
     reader: Reader,
 }
 
@@ -36,7 +35,7 @@ impl Iterator for Lexer {
 }
 
 impl Lexer {
-    fn new(content: String) -> Self {
+    pub fn new(content: String) -> Self {
         Lexer {
             reader: Reader::new(content),
         }
@@ -63,14 +62,16 @@ impl Lexer {
             None => Token {
                 typ: TokenTyp::EOF,
                 content: String::new(),
-                row: 0,
-                col: 0,
+                row: self.reader.row,
+                col: self.reader.col,
             },
         }
     }
 
     fn process_whitespace(&mut self) -> Token {
         let mut content = String::new();
+        let row = self.reader.row;
+        let col = self.reader.col;
 
         while let Some(c) = self.reader.next() {
             if !c.is_whitespace() {
@@ -82,8 +83,8 @@ impl Lexer {
         return Token {
             typ: TokenTyp::Whitespace,
             content: content,
-            row: 0,
-            col: 0,
+            row: row,
+            col: col,
         };
     }
 
@@ -112,6 +113,9 @@ impl Lexer {
         self.reader.next().unwrap();
         let mut content = String::new();
         let mut is_multitline = false;
+
+        let row = self.reader.row;
+        let col = self.reader.col;
 
         let q_count = self.string_count_quote();
 
@@ -149,13 +153,16 @@ impl Lexer {
         return Token {
             typ: TokenTyp::String,
             content: content,
-            row: 0,
-            col: 0,
+            row: row,
+            col: col,
         };
     }
 
     fn process_numeric(&mut self) -> Token {
         let mut content = String::new();
+
+        let row = self.reader.row;
+        let col = self.reader.col;
 
         while let Some(c) = self.reader.next() {
             if c.is_numeric() || c == '.' {
@@ -168,8 +175,8 @@ impl Lexer {
         return Token {
             typ: TokenTyp::Number,
             content: content,
-            row: 0,
-            col: 0,
+            row: row,
+            col: col,
         };
     }
 
@@ -283,6 +290,9 @@ impl Lexer {
         ];
         let mut content = String::new();
 
+        let row = self.reader.row;
+        let col = self.reader.col;
+
         if let Some(c) = self.reader.next() {
             if c.is_alphabetic() {
                 content.push(c);
@@ -310,14 +320,17 @@ impl Lexer {
         return Token {
             typ: typ,
             content: content,
-            row: 0,
-            col: 0,
+            row: row,
+            col: col,
         };
     }
 
     fn process_comment(&mut self) -> Token {
         let mut content = String::new();
-        let start_char = self.reader.peek().unwrap();
+        let start_char = self.reader.peek().copied().unwrap();
+
+        let row = self.reader.row;
+        let col = self.reader.col;
 
         match start_char {
             '/' => {
@@ -329,7 +342,7 @@ impl Lexer {
                         break;
                     }
                 }
-            },
+            }
             '{' => {
                 self.reader.advance_by(1);
                 while let Some(c) = self.reader.next() {
@@ -339,15 +352,15 @@ impl Lexer {
                         break;
                     }
                 }
-            },
+            }
             _ => panic!("WTF how did we get here"),
         }
 
         return Token {
             typ: TokenTyp::Comment,
             content: content,
-            row: 0,
-            col: 0,
+            row: row,
+            col: col,
         };
     }
 }

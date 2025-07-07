@@ -8,5 +8,6 @@
     - [ ] char
   - [X] Number
   - [X] Operator
-  - [ ] Indentifier
-  - [ ] Whitespace
+  - [X] Indentifier / Keywords
+  - [X] Whitespace
+  - [ ] comment

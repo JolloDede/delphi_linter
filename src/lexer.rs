@@ -1,3 +1,4 @@
+use core::panic;
 use std::{iter::Peekable, path::Iter, str::Chars, thread::panicking, vec::IntoIter};
 
 use crate::reader::Reader;
@@ -48,7 +49,13 @@ impl Lexer {
             Some(c) if c.is_whitespace() => self.process_whitespace(),
             Some(c) if *c == '\'' => self.process_stringliteral(),
             Some(c) if c.is_numeric() => self.process_numeric(),
-            Some(c) if c.is_ascii_punctuation() => Token { typ: TokenTyp::Operator, content: self.reader.next().unwrap().to_string(), row: 0, col: 0 },
+            Some(c) if c.is_ascii_punctuation() => Token {
+                typ: TokenTyp::Operator,
+                content: self.reader.next().unwrap().to_string(),
+                row: 0,
+                col: 0,
+            },
+            Some(c) if c.is_alphabetic() => self.process_indentifier(),
             Some(_) => todo!(),
             None => Token {
                 typ: TokenTyp::EOF,
@@ -150,13 +157,155 @@ impl Lexer {
         while let Some(c) = self.reader.next() {
             if c.is_numeric() || c == '.' {
                 content.push(c);
-            }else {
+            } else {
                 break;
             }
         }
 
         return Token {
             typ: TokenTyp::Number,
+            content: content,
+            row: 0,
+            col: 0,
+        };
+    }
+
+    fn process_indentifier(&mut self) -> Token {
+        const DELPHI_KEYWORDS: [&str; 105] = [
+            "absolute",
+            "abstract",
+            "and",
+            "array",
+            "as",
+            "asm",
+            "assembler",
+            "automated",
+            "begin",
+            "case",
+            "cdecl",
+            "class",
+            "const",
+            "constructor",
+            "contains",
+            "default",
+            "destructor",
+            "dispid",
+            "dispinterface",
+            "div",
+            "do",
+            "downto",
+            "dynamic",
+            "else",
+            "end",
+            "except",
+            "export",
+            "exports",
+            "external",
+            "far",
+            "file",
+            "final",
+            "finalization",
+            "finally",
+            "for",
+            "forward",
+            "function",
+            "goto",
+            "if",
+            "implementation",
+            "implements",
+            "in",
+            "index",
+            "inherited",
+            "initialization",
+            "inline",
+            "interface",
+            "is",
+            "label",
+            "library",
+            "message",
+            "mod",
+            "name",
+            "near",
+            "nil",
+            "not",
+            "object",
+            "of",
+            "on",
+            "or",
+            "out",
+            "overload",
+            "override",
+            "package",
+            "packed",
+            "pascal",
+            "platform",
+            "private",
+            "procedure",
+            "program",
+            "property",
+            "protected",
+            "public",
+            "published",
+            "raise",
+            "read",
+            "record",
+            "register",
+            "reintroduce",
+            "repeat",
+            "requires",
+            "resident",
+            "resourcestring",
+            "safecall",
+            "set",
+            "shl",
+            "shr",
+            "stdcall",
+            "stored",
+            "string",
+            "then",
+            "threadvar",
+            "to",
+            "try",
+            "type",
+            "unit",
+            "unsafe",
+            "until",
+            "uses",
+            "var",
+            "virtual",
+            "while",
+            "with",
+            "write",
+            "xor",
+        ];
+        let mut content = String::new();
+
+        if let Some(c) = self.reader.next() {
+            if c.is_alphabetic() {
+                content.push(c);
+            } else {
+                panic!("process_indentifier is_alphabetic");
+            }
+        } else {
+            panic!("process_indentifier next");
+        }
+
+        while let Some(c) = self.reader.next() {
+            if c.is_alphanumeric() {
+                content.push(c);
+            } else {
+                break;
+            }
+        }
+
+        let mut typ = if DELPHI_KEYWORDS.contains(&content.as_str()) {
+            TokenTyp::Keyword
+        } else {
+            TokenTyp::Identifier
+        };
+
+        return Token {
+            typ: typ,
             content: content,
             row: 0,
             col: 0,
@@ -271,5 +420,25 @@ mod tests {
 
         assert_eq!(tok.typ, TokenTyp::Operator);
         assert_eq!(tok.content, "=");
+    }
+
+    #[test]
+    fn indentifier_tokens() {
+        let mut lex = Lexer::new(String::from("variable"));
+
+        let tok = lex.next_token();
+
+        assert_eq!(tok.typ, TokenTyp::Identifier);
+        assert_eq!(tok.content, "variable");
+    }
+
+    #[test]
+    fn keyword_tokens() {
+        let mut lex = Lexer::new(String::from("const"));
+
+        let tok = lex.next_token();
+
+        assert_eq!(tok.typ, TokenTyp::Keyword);
+        assert_eq!(tok.content, "const");
     }
 }

@@ -11,11 +11,12 @@ impl Reader {
         Reader {
             chars: charas,
             i: 0,
-            row: 1,
-            col: 1,
+            row: 1, // Delphi uses 1-based line numbers
+            col: 1, // Delphi uses 1-based column numbers
         }
     }
 
+    /// Returns the current character and advances to the next
     pub fn next(&mut self) -> Option<char> {
         if let Some(c) = self.chars.get(self.i) {
             if *c == '\n' {
@@ -31,18 +32,31 @@ impl Reader {
         return None;
     }
 
+    /// Peeks at the next character without advancing
     pub fn peek(&mut self) -> Option<char> {
         self.peek_nth(0)
     }
 
+    /// Peeks at a character at a specific offset from current position
     pub fn peek_nth(&self, offset: usize) -> Option<char> {
         self.chars.get(self.i + offset).copied()
     }
 
+    /// Advances by multiple characters
     pub fn advance_by(&mut self, index: usize) {
         for _ in 0..index {
             self.next();
         }
+    }
+
+    /// Gets the current position (1-based)
+    pub fn position(&self) -> (usize, usize) {
+        (self.row, self.col)
+    }
+
+    /// Checks if we've reached the end of input
+    pub fn is_eof(&self) -> bool {
+        self.i >= self.chars.len()
     }
 }
 

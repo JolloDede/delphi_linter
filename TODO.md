@@ -25,3 +25,9 @@
     - [ ] while
     - [ ] statement?
     - [ ] function in function
+
+## Refactor 
+
+- [ ] Reader more utility functions
+  - [ ] read until
+  - [ ] skip whitespace

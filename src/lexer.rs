@@ -42,13 +42,13 @@ impl Lexer {
     }
 
     fn next_token(&mut self) -> Token {
-        let char = self.reader.peek().copied();
+        let char = self.reader.peek();
 
         match char {
             Some(c) if c.is_whitespace() => self.process_whitespace(),
             Some(c) if c == '\'' => self.process_stringliteral(),
             Some(c) if c.is_numeric() => self.process_numeric(),
-            Some(c) if c == '{' || (c == '/' && *self.reader.peek_nth(1).unwrap() == '/') => {
+            Some(c) if c == '{' || (c == '/' && self.reader.peek_nth(1).unwrap() == '/') => {
                 self.process_comment()
             }
             Some(c) if ['+', '-', '*', '/'].contains(&c) => Token {
@@ -94,7 +94,7 @@ impl Lexer {
         let mut i = 0;
         loop {
             if let Some(c) = self.reader.peek_nth(i) {
-                if *c == '\'' {
+                if c == '\'' {
                     q_count += 1;
                 } else {
                     break;
@@ -123,7 +123,7 @@ impl Lexer {
             self.reader.advance_by(q_count);
 
             if let Some(c) = self.reader.peek() {
-                if *c == '\n' {
+                if c == '\n' {
                     is_multitline = true;
                 } else {
                     let _ = [0..q_count / 2].map(|_| content.push('\''));
@@ -327,7 +327,7 @@ impl Lexer {
 
     fn process_comment(&mut self) -> Token {
         let mut content = String::new();
-        let start_char = self.reader.peek().copied().unwrap();
+        let start_char = self.reader.peek().unwrap();
 
         let row = self.reader.row;
         let col = self.reader.col;

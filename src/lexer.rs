@@ -16,22 +16,14 @@ pub enum TokenTyp {
 }
 
 pub struct Token {
-    typ: TokenTyp,
-    content: String,
-    row: usize,
-    col: usize,
+    pub typ: TokenTyp,
+    pub content: String,
+    pub row: usize,
+    pub col: usize,
 }
 
 pub struct Lexer {
     reader: Reader,
-}
-
-impl Iterator for Lexer {
-    type Item = Token;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        todo!()
-    }
 }
 
 impl Lexer {
@@ -39,6 +31,10 @@ impl Lexer {
         Lexer {
             reader: Reader::new(content),
         }
+    }
+
+    pub fn next(&mut self) -> Token {
+        self.next_token()
     }
 
     fn next_token(&mut self) -> Token {
@@ -88,66 +84,33 @@ impl Lexer {
         };
     }
 
-    fn string_count_quote(&self) -> usize {
-        let mut q_count = 0;
-
-        let mut i = 0;
-        loop {
-            if let Some(c) = self.reader.peek_nth(i) {
-                if c == '\'' {
-                    q_count += 1;
-                } else {
-                    break;
-                }
-            } else {
-                break;
-            }
-
-            i += 1;
-        }
-
-        return q_count;
-    }
-
-    fn process_stringliteral(&mut self) -> Token {
-        self.reader.next().unwrap();
+    fn process_string(&mut self, quote_count: usize) -> Token {
         let mut content = String::new();
-        let mut is_multitline = false;
-
         let row = self.reader.row;
         let col = self.reader.col;
 
-        let q_count = self.string_count_quote();
+        // String only contains '
+        if quote_count % 2 == 0 {
+            if quote_count != 2 {
+                content = self.delphi_string_escaped_quotes(quote_count);
+            }
+            return Token {
+                typ: TokenTyp::String,
+                content: content,
+                row: row,
+                col: col,
+            };
+        }
 
-        if q_count > 1 {
+        loop {
+            content += &self.reader.read_until('\'');
+
+            let q_count = self.reader.count_until_not('\'');
             self.reader.advance_by(q_count);
 
-            if let Some(c) = self.reader.peek() {
-                if c == '\n' {
-                    is_multitline = true;
-                } else {
-                    let _ = [0..q_count / 2].map(|_| content.push('\''));
-                }
+            if q_count % 2 != 0 {
+                break;
             }
-        }
-
-        while let Some(c) = self.reader.next() {
-            if c == '\'' {
-                let current_q_count = self.string_count_quote();
-
-                if is_multitline && current_q_count == q_count {
-                    self.reader.advance_by(current_q_count);
-                    break;
-                } else if is_multitline {
-                    let _ = [0..current_q_count / 2].map(|_| content.push('\''));
-                }
-            } else {
-                content.push(c);
-            }
-        }
-
-        if is_multitline {
-            content.truncate(content.len() - 1);
         }
 
         return Token {
@@ -156,6 +119,108 @@ impl Lexer {
             row: row,
             col: col,
         };
+    }
+
+    fn delphi_string_escaped_quotes(&self, quote_count: usize) -> String {
+        [1..(quote_count / 2) - 1].map(|_| '\'').iter().collect()
+    }
+
+    fn process_multiline_string(&mut self, quote_count: usize) -> Token {
+        let mut content = String::new();
+        let row = self.reader.row;
+        let col = self.reader.col;
+
+        self.reader.advance_by(quote_count);
+        // Next must be \n
+        self.reader.next();
+
+        let indent_space_count = self.reader.count_until_not(' ');
+
+        loop {
+            self.reader.advance_by(indent_space_count);
+
+            if self.reader.peek() == Some('\'') {
+                let end_quote_count = self.reader.count_until_not('\'');
+
+                if end_quote_count == quote_count {
+                    break;
+                } else {
+                    content = self.delphi_string_escaped_quotes(end_quote_count);
+                }
+            }
+            content += &self.reader.read_until_any(&['\n', '\'']);
+        }
+
+        // while let Some(c) = self.reader.next() {
+        //     if c == '\'' {
+        //         let current_q_count = self.string_count_quote();
+
+        //         if is_multitline && current_q_count == q_count {
+        //             self.reader.advance_by(current_q_count);
+        //             break;
+        //         } else if is_multitline {
+        //             let _ = [0..current_q_count / 2].map(|_| content.push('\''));
+        //         }
+        //     } else {
+        //         content.push(c);
+        //     }
+        // }
+
+        content.truncate(content.len() - 1);
+
+        return Token {
+            typ: TokenTyp::String,
+            content: content,
+            row: row,
+            col: col,
+        };
+    }
+
+    fn process_stringliteral(&mut self) -> Token {
+        let quote_count = self.reader.count_until_not('\'');
+
+        if quote_count % 2 == 0 {
+            return self.process_string(quote_count);
+        } else {
+            return self.process_multiline_string(quote_count);
+        }
+
+        // self.reader.next().unwrap();
+        // let mut content = String::new();
+        // let mut is_multitline = false;
+
+        // let row = self.reader.row;
+        // let col = self.reader.col;
+
+        // let q_count = self.string_count_quote();
+
+        // if q_count > 1 {
+        //     self.reader.advance_by(q_count);
+
+        //     if let Some(c) = self.reader.peek() {
+        //         if c == '\n' {
+        //             is_multitline = true;
+        //         } else {
+        //             let _ = [0..q_count / 2].map(|_| content.push('\''));
+        //         }
+        //     }
+        // }
+
+        // while let Some(c) = self.reader.next() {
+        //     if c == '\'' {
+        //         let current_q_count = self.string_count_quote();
+
+        //         if is_multitline && current_q_count == q_count {
+        //             self.reader.advance_by(current_q_count);
+        //             break;
+        //         } else if is_multitline {
+        //             let _ = [0..current_q_count / 2].map(|_| content.push('\''));
+        //         }
+        //     } else {
+        //         content.push(c);
+        //     }
+        // }
+
     }
 
     fn process_numeric(&mut self) -> Token {
@@ -311,7 +376,7 @@ impl Lexer {
             }
         }
 
-        let mut typ = if DELPHI_KEYWORDS.contains(&content.as_str()) {
+        let typ = if DELPHI_KEYWORDS.contains(&content.as_str()) {
             TokenTyp::Keyword
         } else {
             TokenTyp::Identifier
@@ -396,6 +461,23 @@ mod tests {
 
         assert_eq!(tok.typ, TokenTyp::String);
         assert_eq!(tok.content, "string");
+    }
+
+    #[test]
+    fn empty_string() {
+        let mut lex = Lexer::new(String::from("''"));
+
+        let tok = lex.next_token();
+
+        assert_eq!(tok.typ, TokenTyp::String);
+        assert_eq!(tok.content, "");
+
+        let mut lex = Lexer::new(String::from("''''"));
+
+        let tok = lex.next_token();
+
+        assert_eq!(tok.typ, TokenTyp::String);
+        assert_eq!(tok.content, "'");
     }
 
     #[test]

@@ -49,6 +49,20 @@ impl Reader {
         }
     }
 
+    // Advance the reader until the target character is reached and return all of the characters found
+    pub fn read_until(&mut self, target: char) -> String {
+        let mut res = String::new();
+        while let Some(c) = self.peek() {
+            if c == target {
+                break;
+            }
+            if let Some(c) = self.next() {
+                res.push(c);
+            }
+        }
+        return res;
+    }
+
     /// Gets the current position (1-based)
     pub fn position(&self) -> (usize, usize) {
         (self.row, self.col)
@@ -124,5 +138,14 @@ mod tests {
         let _ = reader.advance_by(2);
 
         assert_eq!(reader.i, 4);
+    }
+
+    #[test]
+    fn read_until() {
+        let mut reader = Reader::new(String::from("1234"));
+
+        let res = reader.read_until('4');
+
+        assert_eq!(res.as_str(), "123");
     }
 }

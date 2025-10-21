@@ -9,8 +9,8 @@
   - [X] Number
   - [X] Operator
   - [X] Indentifier / Keywords
-  - [X] Whitespace
-  - [X] comment
+  - [ ] Whitespace
+  - [ ] comment
 - [ ] Parser
   - [ ] define syntax
     - [X] DefinitionSection
@@ -29,6 +29,4 @@
 ## Refactor 
 
 - [ ] Reader more utility functions
-  - [ ] read until
-  - [ ] skip whitespace
-  - [ ] skip until
+  - [X] read until

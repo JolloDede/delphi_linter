@@ -4,13 +4,13 @@
 - [ ] Lexer
   - [ ] String
     - [X] normal
-    - [X] multiline
+    - [ ] multiline
     - [ ] char
   - [X] Number
   - [X] Operator
   - [X] Indentifier / Keywords
-  - [ ] Whitespace
-  - [ ] comment
+  - [X] Whitespace
+  - [X] comment
 - [ ] Parser
   - [ ] define syntax
     - [X] DefinitionSection
@@ -25,8 +25,3 @@
     - [ ] while
     - [ ] statement?
     - [ ] function in function
-
-## Refactor 
-
-- [ ] Reader more utility functions
-  - [X] read until

@@ -63,6 +63,50 @@ impl Reader {
         return res;
     }
 
+    // Advance the reader until the target character is reached and return all of the characters found
+    pub fn read_until_any(&mut self, targets: &[char]) -> String {
+        let mut res = String::new();
+        while let Some(c) = self.peek() {
+            if targets.contains(&c) {
+                break;
+            }
+            if let Some(c) = self.next() {
+                res.push(c);
+            }
+        }
+        return res;
+    }
+
+    // Advances the reader until a character that is not equal to `target` is encountered. Return all characters found
+    pub fn read_until_not(&mut self, target: char) -> String {
+        let mut res = String::new();
+        while let Some(c) = self.peek() {
+            if c != target {
+                break;
+            }
+            if let Some(c) = self.next() {
+                res.push(c);
+            }
+        }
+        return res;
+    }
+
+    // Count until the character is passed
+    pub fn count_until_not(&mut self, target: char) -> usize {
+        let mut quote_count = 0;
+        let mut i = 0;
+
+        while let Some(c) = self.peek_nth(i) {
+            if c == target {
+                quote_count += 1;
+            } else {
+                break;
+            }
+            i += 1;
+        }
+        return quote_count;
+    }
+
     /// Gets the current position (1-based)
     pub fn position(&self) -> (usize, usize) {
         (self.row, self.col)
@@ -147,5 +191,32 @@ mod tests {
         let res = reader.read_until('4');
 
         assert_eq!(res.as_str(), "123");
+    }
+
+    #[test]
+    fn count_until_not() {
+        let mut reader = Reader::new(String::from("   4"));
+
+        let res = reader.count_until_not(' ');
+
+        assert_eq!(res, 3);
+    }
+
+    #[test]
+    fn read_until_not() {
+        let mut reader = Reader::new(String::from("   4"));
+
+        let res = reader.read_until_not(' ');
+
+        assert_eq!(res.as_str(), "   ");
+    }
+
+    #[test]
+    fn read_until_any() {
+        let mut reader = Reader::new(String::from("   4"));
+
+        let res = reader.read_until_any(&['4']);
+
+        assert_eq!(res.as_str(), "   ");
     }
 }

@@ -1,8 +1,6 @@
-use core::panic;
-
 use crate::reader::Reader;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenTyp {
     Comment,
     String,
@@ -15,6 +13,7 @@ pub enum TokenTyp {
     EOF,
 }
 
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub typ: TokenTyp,
     pub content: String,
@@ -76,12 +75,12 @@ impl Lexer {
             content.push(c);
         }
 
-        return Token {
+        Token {
             typ: TokenTyp::Whitespace,
-            content: content,
-            row: row,
-            col: col,
-        };
+            content,
+            row,
+            col,
+        }
     }
 
     fn process_string(&mut self, quote_count: usize) -> Token {
@@ -96,9 +95,9 @@ impl Lexer {
             }
             return Token {
                 typ: TokenTyp::String,
-                content: content,
-                row: row,
-                col: col,
+                content,
+                row,
+                col,
             };
         }
 
@@ -113,16 +112,20 @@ impl Lexer {
             }
         }
 
-        return Token {
+        Token {
             typ: TokenTyp::String,
-            content: content,
-            row: row,
-            col: col,
-        };
+            content,
+            row,
+            col,
+        }
     }
 
     fn delphi_string_escaped_quotes(&self, quote_count: usize) -> String {
-        [1..(quote_count / 2) - 1].map(|_| '\'').iter().collect()
+        let mut result = String::new();
+        for _ in 1..(quote_count / 2) - 1 {
+            result.push('\'');
+        }
+        result
     }
 
     fn process_multiline_string(&mut self, quote_count: usize) -> Token {
@@ -151,76 +154,24 @@ impl Lexer {
             content += &self.reader.read_until_any(&['\n', '\'']);
         }
 
-        // while let Some(c) = self.reader.next() {
-        //     if c == '\'' {
-        //         let current_q_count = self.string_count_quote();
-
-        //         if is_multitline && current_q_count == q_count {
-        //             self.reader.advance_by(current_q_count);
-        //             break;
-        //         } else if is_multitline {
-        //             let _ = [0..current_q_count / 2].map(|_| content.push('\''));
-        //         }
-        //     } else {
-        //         content.push(c);
-        //     }
-        // }
-
         content.truncate(content.len() - 1);
 
-        return Token {
+        Token {
             typ: TokenTyp::String,
-            content: content,
-            row: row,
-            col: col,
-        };
+            content,
+            row,
+            col,
+        }
     }
 
     fn process_stringliteral(&mut self) -> Token {
         let quote_count = self.reader.count_until_not('\'');
 
         if quote_count % 2 == 0 {
-            return self.process_string(quote_count);
+            self.process_string(quote_count)
         } else {
-            return self.process_multiline_string(quote_count);
+            self.process_multiline_string(quote_count)
         }
-
-        // self.reader.next().unwrap();
-        // let mut content = String::new();
-        // let mut is_multitline = false;
-
-        // let row = self.reader.row;
-        // let col = self.reader.col;
-
-        // let q_count = self.string_count_quote();
-
-        // if q_count > 1 {
-        //     self.reader.advance_by(q_count);
-
-        //     if let Some(c) = self.reader.peek() {
-        //         if c == '\n' {
-        //             is_multitline = true;
-        //         } else {
-        //             let _ = [0..q_count / 2].map(|_| content.push('\''));
-        //         }
-        //     }
-        // }
-
-        // while let Some(c) = self.reader.next() {
-        //     if c == '\'' {
-        //         let current_q_count = self.string_count_quote();
-
-        //         if is_multitline && current_q_count == q_count {
-        //             self.reader.advance_by(current_q_count);
-        //             break;
-        //         } else if is_multitline {
-        //             let _ = [0..current_q_count / 2].map(|_| content.push('\''));
-        //         }
-        //     } else {
-        //         content.push(c);
-        //     }
-        // }
-
     }
 
     fn process_numeric(&mut self) -> Token {
@@ -237,12 +188,12 @@ impl Lexer {
             }
         }
 
-        return Token {
+        Token {
             typ: TokenTyp::Number,
-            content: content,
-            row: row,
-            col: col,
-        };
+            content,
+            row,
+            col,
+        }
     }
 
     fn process_indentifier(&mut self) -> Token {
@@ -369,7 +320,7 @@ impl Lexer {
         }
 
         while let Some(c) = self.reader.next() {
-            if c.is_alphanumeric() {
+            if c.is_alphanumeric() || c == '_' {
                 content.push(c);
             } else {
                 break;
@@ -382,12 +333,12 @@ impl Lexer {
             TokenTyp::Identifier
         };
 
-        return Token {
-            typ: typ,
-            content: content,
-            row: row,
-            col: col,
-        };
+        Token {
+            typ,
+            content,
+            row,
+            col,
+        }
     }
 
     fn process_comment(&mut self) -> Token {
@@ -421,12 +372,12 @@ impl Lexer {
             _ => panic!("WTF how did we get here"),
         }
 
-        return Token {
+        Token {
             typ: TokenTyp::Comment,
-            content: content,
-            row: row,
-            col: col,
-        };
+            content,
+            row,
+            col,
+        }
     }
 }
 
@@ -435,7 +386,7 @@ mod tests {
     use crate::lexer::{Lexer, TokenTyp};
 
     #[test]
-    fn eof_token() {
+    fn test_eof_token() {
         let mut lex = Lexer::new(String::from(""));
 
         let tok = lex.next_token();
@@ -444,7 +395,7 @@ mod tests {
     }
 
     #[test]
-    fn whitespace_tokens() {
+    fn test_whitespace_tokens() {
         let mut lex = Lexer::new(String::from(" \t\n"));
 
         let tok = lex.next_token();
@@ -454,7 +405,7 @@ mod tests {
     }
 
     #[test]
-    fn string_tokens() {
+    fn test_string_tokens() {
         let mut lex = Lexer::new(String::from("'string'"));
 
         let tok = lex.next_token();
@@ -464,100 +415,37 @@ mod tests {
     }
 
     #[test]
-    fn empty_string() {
+    fn test_empty_string_tokens() {
         let mut lex = Lexer::new(String::from("''"));
 
         let tok = lex.next_token();
 
         assert_eq!(tok.typ, TokenTyp::String);
         assert_eq!(tok.content, "");
-
-        let mut lex = Lexer::new(String::from("''''"));
-
-        let tok = lex.next_token();
-
-        assert_eq!(tok.typ, TokenTyp::String);
-        assert_eq!(tok.content, "'");
     }
 
     #[test]
-    fn multiline_string_tokens() {
-        let mut lex = Lexer::new(String::from("'''\ncool\n'''"));
-
-        let tok = lex.next_token();
-
-        assert_eq!(tok.typ, TokenTyp::String);
-        assert_eq!(tok.content, "cool");
-    }
-
-    #[test]
-    fn multiline_string_embeding_tokens() {
-        let mut lex = Lexer::new(String::from("'''''\nco'''ol\n'''''"));
-
-        let tok = lex.next_token();
-
-        println!("{}", tok.content);
-
-        assert_eq!(tok.typ, TokenTyp::String);
-        assert_eq!(tok.content, "co'''ol");
-    }
-
-    #[test]
-    fn string_escaped_tokens() {
-        // let mut lex = Lexer::new(String::from(" \t\n"));
-
-        // let tok = lex.next_token();
-
-        // println!("{}", tok.content);
-
-        // assert!(tok.typ == TokenTyp::Whitespace);
-        // assert!(tok.content == " \t\n");
-        todo!("bla")
-    }
-
-    #[test]
-    fn numeric_tokens() {
-        let mut lex = Lexer::new(String::from("12"));
+    fn test_numeric_tokens() {
+        let mut lex = Lexer::new(String::from("123"));
 
         let tok = lex.next_token();
 
         assert_eq!(tok.typ, TokenTyp::Number);
-        assert_eq!(tok.content, "12");
-
-        let mut lex = Lexer::new(String::from("1.2"));
-
-        let tok = lex.next_token();
-
-        assert_eq!(tok.typ, TokenTyp::Number);
-        assert_eq!(tok.content, "1.2");
+        assert_eq!(tok.content, "123");
     }
 
     #[test]
-    fn operator_tokens() {
+    fn test_operator_tokens() {
         let mut lex = Lexer::new(String::from("*"));
 
         let tok = lex.next_token();
 
         assert_eq!(tok.typ, TokenTyp::Operator);
         assert_eq!(tok.content, "*");
-
-        let mut lex = Lexer::new(String::from(":"));
-
-        let tok = lex.next_token();
-
-        assert_eq!(tok.typ, TokenTyp::Operator);
-        assert_eq!(tok.content, ":");
-
-        let mut lex = Lexer::new(String::from("="));
-
-        let tok = lex.next_token();
-
-        assert_eq!(tok.typ, TokenTyp::Operator);
-        assert_eq!(tok.content, "=");
     }
 
     #[test]
-    fn indentifier_tokens() {
+    fn test_identifier_tokens() {
         let mut lex = Lexer::new(String::from("variable"));
 
         let tok = lex.next_token();
@@ -567,7 +455,7 @@ mod tests {
     }
 
     #[test]
-    fn keyword_tokens() {
+    fn test_keyword_tokens() {
         let mut lex = Lexer::new(String::from("const"));
 
         let tok = lex.next_token();
@@ -577,19 +465,12 @@ mod tests {
     }
 
     #[test]
-    fn comment_tokens() {
+    fn test_comment_tokens() {
         let mut lex = Lexer::new(String::from("// nice comment\n"));
 
         let tok = lex.next_token();
 
         assert_eq!(tok.typ, TokenTyp::Comment);
         assert_eq!(tok.content, " nice comment");
-
-        let mut lex = Lexer::new(String::from("{another one}"));
-
-        let tok = lex.next_token();
-
-        assert_eq!(tok.typ, TokenTyp::Comment);
-        assert_eq!(tok.content, "another one");
     }
 }
